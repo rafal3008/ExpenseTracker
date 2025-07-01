@@ -10,6 +10,7 @@ Expense management module:
 import json
 import os
 import datetime
+import argparse
 
 DATA_FILE = "data.json"
 
@@ -44,3 +45,23 @@ def add_expense(data, price, category, date=None):
         date = datetime.date.today().isoformat()
     expense = {"price": price, "category": category, "date": date}
     data.append(expense)
+
+
+def main():
+    """Parse arguments and execute commands."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-a", "--add", action="store_true", help="Add an expense.")
+    parser.add_argument("-p", "--price", type=float, help="Amount of the expense.")
+    parser.add_argument("-c", "--category", help="Category name for the expense.")
+    parser.add_argument("-d", "--date", help="Date of the expense.")
+    args = parser.parse_args()
+
+    if args.add:
+        data = load_data()
+        add_expense(data, args.price, args.category, args.date)
+        save_data(data)
+        print("Done.")
+
+
+if __name__ == "__main__":
+    main()
