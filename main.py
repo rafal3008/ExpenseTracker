@@ -39,10 +39,8 @@ def add_expense(data, price, category, date=None):
         price (float): Amount of the expense.
         category (str): Category name for the expense.
         date (str, optional): Date of the expense in YYYY-MM-DD format.
-                              Defaults to today's date if None.
+                              Defaults to None.
     """
-    if date is None:
-        date = datetime.date.today().isoformat()
     expense = {"price": price, "category": category, "date": date}
     data.append(expense)
 
@@ -57,10 +55,24 @@ def main():
     args = parser.parse_args()
 
     if args.add:
+
+        if args.price is None:
+            print("You must specify a price.")
+            return
+        if args.price <= 0:
+            print("Price must be greater than zero.")
+            return
+        if args.category is None:
+            args.category = "Uncategorized"
+        if args.date is None:
+            args.date = datetime.date.today().isoformat()
         data = load_data()
         add_expense(data, args.price, args.category, args.date)
         save_data(data)
-        print("Done.")
+        print(
+            f"Done. Added an expense of {args.price} PLN"
+            f" in category '{args.category}' on {args.date}."
+        )
 
 
 if __name__ == "__main__":
