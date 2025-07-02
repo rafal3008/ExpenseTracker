@@ -334,14 +334,12 @@ def main():
         return
 
     if args.show_budget:
-        if args.month is None or args.year is None:
-            today = datetime.date.today()
-            month = today.month
-            year = today.year
-        else:
-            month = args.month
-            year = args.year
+        if args.year is None:
+            print("Please specify --year to show budget.")
+            return
         data = load_data()
+        month = args.month  # if None:  shows budget for whole year
+        year = args.year
         show_budget(month, year, data)
         return
 
