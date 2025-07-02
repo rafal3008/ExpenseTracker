@@ -4,7 +4,7 @@ import json
 import os
 
 
-BUDGET_FILE = "budget.json"
+BUDGET_FILE = "../budget.json"
 
 
 def load_budget():

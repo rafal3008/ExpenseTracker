@@ -5,7 +5,7 @@ import tempfile
 import json
 import os
 
-import expenses
+from cli import expenses
 
 
 def test_add_and_load_expense():

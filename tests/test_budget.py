@@ -4,7 +4,7 @@ import tempfile
 import os
 import json
 
-import budget
+from cli import budget
 
 
 def test_set_and_show_budget():

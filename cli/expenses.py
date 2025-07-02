@@ -5,7 +5,7 @@ import datetime
 import os
 
 
-DATA_FILE = "data.json"
+DATA_FILE = "../data.json"
 
 
 def load_data():
