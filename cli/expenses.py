@@ -23,16 +23,7 @@ def save_data(data):
 
 
 def add_expense(data, price, category, date=None):
-    """
-    Add an expense to the list of expenses.
-
-    Args:
-        data (list): List of current expenses.
-        price (float): Amount of the expense.
-        category (str): Category name for the expense.
-        date (str, optional): Date of the expense in YYYY-MM-DD format.
-                              Defaults to None.
-    """
+    """Add an expense to the list of expenses."""
     if date is None:
         date = datetime.date.today().isoformat()
     expense = {"price": price, "category": category, "date": date}
@@ -49,14 +40,13 @@ def filter_expenses(data, category=None, date_from=None, date_to=None):
         data = [
             expense
             for expense in data
-            if datetime.datetime.strptime(expense["date"], "%Y-%m-%d").date()
-            >= date_from
+            if datetime.date.fromisoformat(expense["date"]) >= date_from
         ]
     if date_to:
         data = [
             expense
             for expense in data
-            if datetime.datetime.strptime(expense["date"], "%Y-%m-%d").date() <= date_to
+            if datetime.date.fromisoformat(expense["date"]) <= date_to
         ]
     return data
 

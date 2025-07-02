@@ -1,8 +1,7 @@
-"""Stuff concerning operating with budget."""
+"""Stuff concerning operating with budgets."""
 
 import json
 import os
-
 
 BUDGET_FILE = "../budget.json"
 
@@ -20,35 +19,47 @@ def load_budget():
 
 def save_budget(budget):
     """Save the budget data to a JSON file."""
-    with open(BUDGET_FILE, "w") as f:
+    with open(BUDGET_FILE, "w", encoding="utf-8") as f:
         json.dump(budget, f, indent=4)
 
 
-def set_budget(month, year, amount):
+def set_budget(year, month, amount):
     """Set the budget for a specific month and year."""
     budget = load_budget()
-    if month is None:
-        key = f"{year}"
-    else:
-        key = f"{year}-{month:02d}"
+    key = f"{year}-{month:02d}"
     budget[key] = amount
     save_budget(budget)
     print(f"Budget for {key} set to {amount:.2f} PLN")
 
 
-def calculate_remaining(month, year, data):
-    """Calculate the remaining budget for a specific month and year."""
+def get_budget(year, month):
+    """Get budget for a specific year and month."""
     budget = load_budget()
     key = f"{year}-{month:02d}"
-    budget_amount = budget.get(key)
-    expenses_sum = sum(e["price"] for e in data if e["date"].startswith(key))
-    return {
-        "budget": budget_amount,
-        "expenses_sum": expenses_sum,
-        "remaining": (
-            (budget_amount - expenses_sum) if budget_amount is not None else None
-        ),
-    }
+    if key not in budget:
+        raise ValueError("Budget not found for the given month and year.")
+    return budget[key]
+
+
+def delete_budget(year, month):
+    """Delete the budget for a specific year and month."""
+    budget = load_budget()
+    key = f"{year}-{month:02d}"
+    if key in budget:
+        del budget[key]
+        save_budget(budget)
+        print(f"Deleted budget for {key}.")
+    else:
+        print(f"No budget found for {key}.")
+
+
+def calculate_remaining(year, month, expenses):
+    """Calculate remaining budget for a given year and month after expenses."""
+    budget = get_budget(year, month)
+    total_spent = sum(
+        e["price"] for e in expenses if e["date"].startswith(f"{year}-{month:02d}")
+    )
+    return budget - total_spent
 
 
 def show_budget(month, year, data):
@@ -95,4 +106,4 @@ def show_budget(month, year, data):
 
         print(f"Budget for {key}: {budget_amount:.2f} PLN")
         print(f"Expenses: {expenses_sum:.2f} PLN")
-        print(f"Remaining: {budget_amount - expenses_sum:.2f} PLN")
+        print(f"Remaining: {budget_amount - expenses_sum:.2f}")
