@@ -85,11 +85,15 @@ def main():
         type=int,
         help="Delete expense by its index in the list (starting from 1).",
     )
+    parser.add_argument(
+        "--edit", type=int, help="Edit an expense by its index (1-based)."
+    )
     parser.add_argument("-l", "--list", action="store_true", help="List expenses.")
     parser.add_argument("-s", "--sum", action="store_true", help="Sum the expenses.")
     parser.add_argument(
         "--group-by-category", action="store_true", help="Group expenses by category."
     )
+    parser.add_argument("--export", help="Export expenses to CSV file.")
 
     # filters
     parser.add_argument("--filter-category", help="Show only this category.")
@@ -146,6 +150,29 @@ def main():
             )
             return
 
+    if args.edit:
+        data = load_data()
+        edit_index = args.edit - 1
+        if 0 <= edit_index < len(data):
+            expense = data[edit_index]
+            if args.price:
+                expense["price"] = args.price
+            if args.category:
+                expense["category"] = args.category
+            if args.date:
+                parsed_date = parse_date(args.date)
+                if parsed_date:
+                    expense["date"] = parsed_date.isoformat()
+            save_data(data)
+            print(
+                f"Updated expense at position {args.edit}: "
+                f"{expense['price']} PLN, {expense['category']}, {expense['date']}"
+            )
+        else:
+            print(
+                f"Invalid index: {args.edit}. Use --list to see all current expenses."
+            )
+
     if args.list:
         data = load_data()
         date_from = parse_date(args.date_from) if args.date_from else None
@@ -179,6 +206,17 @@ def main():
             total = sum(expense["price"] for expense in data)
 
             print(f"{'Total':<8}: {total:.2f} PLN")
+
+    if args.export:
+        filename = args.export
+        data = load_data()
+        with open(filename, "w") as file:
+            file.write("Price,Category,Date\n")
+            for expense in data:
+                file.write(
+                    f"{expense['price']},{expense['category']},{expense['date']}\n"
+                )
+        print(f"Exported {len(data)} expenses to {filename}")
 
 
 if __name__ == "__main__":
