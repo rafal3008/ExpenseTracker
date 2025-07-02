@@ -94,6 +94,9 @@ def main():
         "--group-by-category", action="store_true", help="Group expenses by category."
     )
     parser.add_argument("--export", help="Export expenses to CSV file.")
+    parser.add_argument(
+        "--plot", action="store_true", help="Plot expenses by category."
+    )
 
     # filters
     parser.add_argument("--filter-category", help="Show only this category.")
@@ -102,7 +105,7 @@ def main():
     )
     parser.add_argument("--date-to", help="Show expenses up to this date (YYYY-MM-DD).")
 
-    # categories
+    # data
     parser.add_argument("-p", "--price", type=float, help="Amount of the expense.")
     parser.add_argument("-c", "--category", help="Category name for the expense.")
     parser.add_argument("-d", "--date", help="Date of the expense.")
@@ -217,6 +220,27 @@ def main():
                     f"{expense['price']},{expense['category']},{expense['date']}\n"
                 )
         print(f"Exported {len(data)} expenses to {filename}")
+
+    if args.plot:
+        import matplotlib.pyplot as plt
+        from collections import defaultdict
+
+        data = load_data()
+        summary = defaultdict(float)
+        for expense in data:
+            summary[expense["category"]] += expense["price"]
+
+        categories = list(summary.keys())
+        totals = list(summary.values())
+
+        plt.figure(figsize=(8, 5))
+        plt.bar(categories, totals, color="cyan")
+        plt.xlabel("Category")
+        plt.ylabel("Total Expenses")
+        plt.title("Expenses by Category")
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.show()
 
 
 if __name__ == "__main__":
