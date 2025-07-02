@@ -48,6 +48,9 @@ def save_budget(budget):
 
 def set_budget(month, year, amount):
     """Set the budget for a specific month and year."""
+    if amount <= 0:
+        print("Budget amount must be greater than or equal zero.")
+        return
     budget = load_budget()
     key = f"{year}-{month:02d}"
     budget[key] = amount
@@ -56,19 +59,50 @@ def set_budget(month, year, amount):
 
 
 def show_budget(month, year, data):
-    """Show the budget for a month and year."""
-    key = f"{year}-{month:02d}"
+    """Show the budget for a month and year, or whole year if month=None."""
     budget = load_budget()
-    budget_amount = budget.get(key, None)
-    if budget_amount is None:
-        print(f"No budget set for {key}.")
-        return
 
-    expenses_sum = sum(e["price"] for e in data if e["date"].startswith(key))
+    if month is None:
+        # For whole year (month not specified)
+        print(f"Budget summary for year {year}:")
+        total_budget = 0.0
+        total_expenses = 0.0
 
-    print(f"Budget for {key}: {budget_amount:.2f} PLN")
-    print(f"Expenses: {expenses_sum:.2f} PLN")
-    print(f"Remaining: {budget_amount - expenses_sum:.2f} PLN")
+        for m in range(1, 13):
+            key = f"{year}-{m:02d}"
+            budget_amount = budget.get(key, None)
+            if budget_amount is None:
+                print(f"  {key}: No budget set.")
+                continue
+
+            expenses_sum = sum(e["price"] for e in data if e["date"].startswith(key))
+            remaining = budget_amount - expenses_sum
+
+            print(
+                f"  {key}: Budget {budget_amount:.2f} PLN, "
+                f"Expenses {expenses_sum:.2f} PLN, Remaining {remaining:.2f} PLN"
+            )
+
+            total_budget += budget_amount
+            total_expenses += expenses_sum
+
+        print("-" * 40)
+        print(f"Total budget: {total_budget:.2f} PLN")
+        print(f"Total expenses: {total_expenses:.2f} PLN")
+        print(f"Total remaining: {total_budget - total_expenses:.2f} PLN")
+    else:
+        # For specific month
+        key = f"{year}-{month:02d}"
+        budget_amount = budget.get(key, None)
+        if budget_amount is None:
+            print(f"No budget set for {key}.")
+            return
+
+        expenses_sum = sum(e["price"] for e in data if e["date"].startswith(key))
+
+        print(f"Budget for {key}: {budget_amount:.2f} PLN")
+        print(f"Expenses: {expenses_sum:.2f} PLN")
+        print(f"Remaining: {budget_amount - expenses_sum:.2f} PLN")
 
 
 def add_expense(data, price, category, date=None):
@@ -301,10 +335,14 @@ def main():
 
     if args.show_budget:
         if args.month is None or args.year is None:
-            print("Please specify --month and --year to show budget.")
-            return
+            today = datetime.date.today()
+            month = today.month
+            year = today.year
+        else:
+            month = args.month
+            year = args.year
         data = load_data()
-        show_budget(args.month, args.year, data)
+        show_budget(month, year, data)
         return
 
 
