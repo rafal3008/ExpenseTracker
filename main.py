@@ -13,6 +13,7 @@ import datetime
 import argparse
 
 DATA_FILE = "data.json"
+BUDGET_FILE = "budget.json"
 
 
 def load_data():
@@ -28,6 +29,46 @@ def save_data(data):
     """Save the expenses data list to a JSON file."""
     with open(DATA_FILE, "w") as json_file:
         json.dump(data, json_file, indent=4)
+
+
+def load_budget():
+    """Load budget data from a JSON file and return it as a list."""
+    try:
+        with open("budget.json", "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+
+
+def save_budget(budget):
+    """Save the budget data to a JSON file."""
+    with open("budget.json", "w") as f:
+        json.dump(budget, f, indent=4)
+
+
+def set_budget(month, year, amount):
+    """Set the budget for a specific month and year."""
+    budget = load_budget()
+    key = f"{year}-{month:02d}"
+    budget[key] = amount
+    save_budget(budget)
+    print(f"Budget for {key} set to {amount:.2f} PLN")
+
+
+def show_budget(month, year, data):
+    """Show the budget for a month and year."""
+    key = f"{year}-{month:02d}"
+    budget = load_budget()
+    budget_amount = budget.get(key, None)
+    if budget_amount is None:
+        print(f"No budget set for {key}.")
+        return
+
+    expenses_sum = sum(e["price"] for e in data if e["date"].startswith(key))
+
+    print(f"Budget for {key}: {budget_amount:.2f} PLN")
+    print(f"Expenses: {expenses_sum:.2f} PLN")
+    print(f"Remaining: {budget_amount - expenses_sum:.2f} PLN")
 
 
 def add_expense(data, price, category, date=None):
@@ -109,6 +150,15 @@ def main():
     parser.add_argument("-p", "--price", type=float, help="Amount of the expense.")
     parser.add_argument("-c", "--category", help="Category name for the expense.")
     parser.add_argument("-d", "--date", help="Date of the expense.")
+
+    # budgeting
+    parser.add_argument("--set-budget", type=float, help="Set budget amount for month.")
+    parser.add_argument("--month", type=int, help="Month for budget (1-12).")
+    parser.add_argument("--year", type=int, help="Year for budget (YYYY).")
+    parser.add_argument(
+        "--show-budget", action="store_true", help="Show budget summary for month/year."
+    )
+
     args = parser.parse_args()
 
     if args.add:
@@ -241,6 +291,21 @@ def main():
         plt.xticks(rotation=45)
         plt.tight_layout()
         plt.show()
+
+    if args.set_budget is not None:
+        if args.month is None or args.year is None:
+            print("Please specify --month and --year when setting budget.")
+            return
+        set_budget(args.month, args.year, args.set_budget)
+        return
+
+    if args.show_budget:
+        if args.month is None or args.year is None:
+            print("Please specify --month and --year to show budget.")
+            return
+        data = load_data()
+        show_budget(args.month, args.year, data)
+        return
 
 
 if __name__ == "__main__":
