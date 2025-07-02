@@ -54,16 +54,42 @@ def parse_date(date_str):
         return None
 
 
+def filter_expenses(data, category=None, date_from=None, date_to=None):
+    """Filter expenses based on category and date."""
+    if category:
+        data = [expense for expense in data if expense["category"] == category]
+    if date_from:
+        data = [
+            expense
+            for expense in data
+            if datetime.datetime.strptime(expense["date"], "%Y-%m-%d").date()
+            >= date_from
+        ]
+    if date_to:
+        data = [
+            expense
+            for expense in data
+            if datetime.datetime.strptime(expense["date"], "%Y-%m-%d").date()
+            <= date_from
+        ]
+    return data
+
+
 def main():
     """Parse arguments and execute commands."""
     parser = argparse.ArgumentParser()
+    # actions
     parser.add_argument("-a", "--add", action="store_true", help="Add an expense.")
     parser.add_argument("-l", "--list", action="store_true", help="List expenses.")
+
+    # filters
     parser.add_argument("--filter-category", help="Show only this category.")
     parser.add_argument(
         "--date-from", help="Show expenses from this date (YYYY-MM-DD)."
     )
     parser.add_argument("--date-to", help="Show expenses up to this date (YYYY-MM-DD).")
+
+    # categories
     parser.add_argument("-p", "--price", type=float, help="Amount of the expense.")
     parser.add_argument("-c", "--category", help="Category name for the expense.")
     parser.add_argument("-d", "--date", help="Date of the expense.")
@@ -91,33 +117,11 @@ def main():
 
     if args.list:
         data = load_data()
+        date_from = parse_date(args.date_from) if args.date_from else None
+        date_to = parse_date(args.date_to) if args.date_to else None
 
-        if args.filter_category:
-            data = [
-                expense
-                for expense in data
-                if expense["category"] == args.filter_category
-            ]
+        data = filter_expenses(data, args.filter_category, date_from, date_to)
 
-        if args.date_from:
-            date_from = parse_date(args.date_from)
-            if date_from is not None:
-                data = [
-                    expense
-                    for expense in data
-                    if datetime.datetime.strptime(expense["date"], "%Y-%m-%d").date()
-                    >= date_from
-                ]
-
-        if args.date_to:
-            date_to = parse_date(args.date_to)
-            if date_to is not None:
-                data = [
-                    expense
-                    for expense in data
-                    if datetime.datetime.strptime(expense["date"], "%Y-%m-%d").date()
-                    <= date_to
-                ]
         print(f"{'Price':<8} | {'Category':<12} | {'Date'}")
         print("-" * 35)
         for expense in data:
