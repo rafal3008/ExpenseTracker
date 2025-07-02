@@ -5,14 +5,11 @@ It can be really bad, idk.
 """
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field, conint, confloat  # Validating data
-from typing import Optional
+from pydantic import BaseModel, Field, conint, confloat
+from typing import List, Optional
 import datetime
-from cli import expenses
 
 app = FastAPI()
-
-budgets = []
 
 
 class BudgetItem(BaseModel):
@@ -28,7 +25,11 @@ class ExpenseItem(BaseModel):
 
     price: confloat(gt=0)
     category: str
-    date: Optional[datetime.date] = Field(default_factory=datetime.date.today)
+    date: datetime.date = Field(default_factory=datetime.date.today)
+
+
+budgets = {}
+expenses: List[ExpenseItem] = []
 
 
 @app.post("/budget/")
@@ -41,7 +42,7 @@ def set_budget(item: BudgetItem):
 
 @app.get("/budget/{year}/{month}")
 def get_budget(year: int, month: int):
-    """Get the budget. Same like last one - it should do sth, but it's not."""
+    """Get the budget for specific year and/or month."""
     key = f"{year}-{month:02d}"
     amount = budgets.get(key)
     if amount is None:
@@ -49,11 +50,39 @@ def get_budget(year: int, month: int):
     return {"year": year, "month": month, "amount": amount}
 
 
+@app.delete("/budget/{year}/{month}")
+def delete_budget(year: int, month: int):
+    """Delete the budget for specific year and/or month."""
+    key = f"{year}-{month:02d}"
+    if key not in budgets:
+        raise HTTPException(status_code=404, detail="Budget not found")
+    del budgets[key]
+    return {"message": f"Budget for {key} deleted"}
+
+
 @app.post("/expenses/")
 def add_expense(expense: ExpenseItem):
     """Add an expense to the budget."""
-    expenses.append(expense.dict())
+    expenses.append(expense)
     return {
-        "message": f"Added expense: {expense.price:.2f} "
-        f"PLN, Category: {expense.category}, Date: {expense.date}"
+        "message": f"Added expense: {expense.price:.2f} PLN,"
+        f" Category: {expense.category}, Date: {expense.date}"
     }
+
+
+@app.get("/expenses/", response_model=List[ExpenseItem])
+def list_expenses(year: Optional[int] = None, month: Optional[int] = None):
+    """List all expenses for a specific year and/or month."""
+    filtered = expenses
+    if year is not None and month is not None:
+        filtered = [
+            e for e in expenses if e.date.year == year and e.date.month == month
+        ]
+    return filtered
+
+
+@app.delete("/expenses/")
+def clear_expenses():
+    """Clear all expenses."""
+    expenses.clear()
+    return {"message": "All expenses deleted"}
