@@ -49,6 +49,7 @@ def main():
     """Parse arguments and execute commands."""
     parser = argparse.ArgumentParser()
     parser.add_argument("-a", "--add", action="store_true", help="Add an expense.")
+    parser.add_argument("-l", "--list", action="store_true", help="List expenses.")
     parser.add_argument("-p", "--price", type=float, help="Amount of the expense.")
     parser.add_argument("-c", "--category", help="Category name for the expense.")
     parser.add_argument("-d", "--date", help="Date of the expense.")
@@ -73,6 +74,15 @@ def main():
             f"Done. Added an expense of {args.price} PLN"
             f" in category '{args.category}' on {args.date}."
         )
+
+    if args.list:
+        data = load_data()
+        print(f"{'Price':<8} | {'Category':<12} | {'Date'}")
+        print("-" * 35)
+        for expense in data:
+            print(
+                f"{expense['price']:<8} | {expense['category']:<12} | {expense['date']}"
+            )
 
 
 if __name__ == "__main__":
