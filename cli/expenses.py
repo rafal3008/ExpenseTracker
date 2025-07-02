@@ -5,7 +5,7 @@ import datetime
 import os
 
 
-DATA_FILE = "../data.json"
+DATA_FILE = os.getenv("DATA_FILE", "expenses.json")
 
 
 def load_data():

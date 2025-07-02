@@ -16,8 +16,14 @@ from expenses import (
     edit_expense,
     delete_expense,
 )
+import os
+
+
 from budget import set_budget, show_budget
 from plotting import plot_expenses_by_category
+
+BUDGET_FILE = os.getenv("BUDGET_FILE", "budget.json")
+DATA_FILE = os.getenv("DATA_FILE", "expenses.json")
 
 
 def main():
@@ -60,7 +66,7 @@ def main():
         "--year", type=int, required=True, help="Year for budget (YYYY)."
     )
     parser.add_argument(
-        "--month", type=int, choices=range(1, 12), help="Month for budget (1-12)."
+        "--month", type=int, choices=range(1, 13), help="Month for budget (1-12)."
     )
     parser.add_argument(
         "--set-budget", type=float, help="Set budget amount for month/year."
@@ -70,7 +76,13 @@ def main():
     )
 
     args = parser.parse_args()
-    data = load_data()
+
+    if args.show_budget:
+        today = datetime.date.today()
+        month = args.month
+        year = args.year if args.year else today.year
+        show_budget(month, year)
+        return
 
     if args.set_budget is not None:
         if args.month is None or args.year is None:
@@ -79,21 +91,15 @@ def main():
         set_budget(args.month, args.year, args.set_budget)
         return
 
-    if args.show_budget:
-        today = datetime.date.today()
-        month = args.month  # może być None
-        year = args.year if args.year else today.year
-        data = load_data()
-        show_budget(month, year, data)
-        return
-
     if args.add:
+        data = load_data()
         price = float(args.add[0])
         category = args.add[1]
         add_expense(data, price, category, args.date)
         return
 
     if args.filter:
+        data = load_data()
         date_from = (
             datetime.date.fromisoformat(args.date_from) if args.date_from else None
         )
@@ -106,6 +112,7 @@ def main():
         return
 
     if args.edit:
+        data = load_data()
         index = int(args.edit[0])
         price = float(args.edit[1]) if len(args.edit) > 1 else None
         category = args.edit[2] if len(args.edit) > 2 else None
@@ -114,10 +121,12 @@ def main():
         return
 
     if args.delete is not None:
+        data = load_data()
         delete_expense(data, args.delete)
         return
 
     if args.plot:
+        data = load_data()
         plot_expenses_by_category(data)
         return
 

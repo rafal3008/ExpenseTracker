@@ -3,7 +3,8 @@
 import json
 import os
 
-BUDGET_FILE = "../budget.json"
+
+BUDGET_FILE = os.getenv("BUDGET_FILE", "budget.json")
 
 
 def load_budget():
