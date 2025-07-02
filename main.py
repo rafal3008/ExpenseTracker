@@ -297,19 +297,25 @@ def main():
     if args.export:
         filename = args.export
         data = load_data()
-        with open(filename, "w") as file:
-            file.write("Price,Category,Date\n")
-            for expense in data:
-                file.write(
-                    f"{expense['price']},{expense['category']},{expense['date']}\n"
-                )
-        print(f"Exported {len(data)} expenses to {filename}")
+        try:
+            with open(filename, "w", newline="", encoding="utf-8") as file:
+                file.write("Price,Category,Date\n")
+                for expense in data:
+                    file.write(
+                        f"{expense['price']},{expense['category']},{expense['date']}\n"
+                    )
+            print(f"Exported {len(data)} expenses to {filename}")
+        except Exception as e:
+            print(f"Error while exporting data: {e}")
 
     if args.plot:
         import matplotlib.pyplot as plt
         from collections import defaultdict
 
         data = load_data()
+        if not data:
+            print("No expense data to plot.")
+            return
         summary = defaultdict(float)
         for expense in data:
             summary[expense["category"]] += expense["price"]
@@ -318,12 +324,23 @@ def main():
         totals = list(summary.values())
 
         plt.figure(figsize=(8, 5))
-        plt.bar(categories, totals, color="cyan")
+        bars = plt.bar(categories, totals, color="cyan")
         plt.xlabel("Category")
         plt.ylabel("Total Expenses")
         plt.title("Expenses by Category")
         plt.xticks(rotation=45)
         plt.tight_layout()
+
+        for bar in bars:
+            height = bar.get_height()
+            plt.text(
+                bar.get_x() + bar.get_width() / 2,
+                height,
+                f"{height:.2f}",
+                ha="center",
+                va="bottom",
+                fontsize=8,
+            )
         plt.show()
 
     if args.set_budget is not None:
