@@ -56,14 +56,21 @@ def main():
     parser.add_argument("-d", "--date", help="Date of the expense.")
 
     # budgeting
-    parser.add_argument("--set-budget", type=float, help="Set budget amount for month.")
-    parser.add_argument("--month", type=int, help="Month for budget (1-12).")
-    parser.add_argument("--year", type=int, help="Year for budget (YYYY).")
+    parser.add_argument(
+        "--year", type=int, required=True, help="Year for budget (YYYY)."
+    )
+    parser.add_argument(
+        "--month", type=int, choices=range(1, 12), help="Month for budget (1-12)."
+    )
+    parser.add_argument(
+        "--set-budget", type=float, help="Set budget amount for month/year."
+    )
     parser.add_argument(
         "--show-budget", action="store_true", help="Show budget summary for month/year."
     )
 
     args = parser.parse_args()
+    data = load_data()
 
     if args.set_budget is not None:
         if args.month is None or args.year is None:
@@ -74,13 +81,11 @@ def main():
 
     if args.show_budget:
         today = datetime.date.today()
-        month = args.month if args.month else today.month
+        month = args.month  # może być None
         year = args.year if args.year else today.year
         data = load_data()
         show_budget(month, year, data)
         return
-
-    data = load_data()
 
     if args.add:
         price = float(args.add[0])

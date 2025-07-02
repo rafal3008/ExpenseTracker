@@ -10,7 +10,7 @@ DATA_FILE = "data.json"
 
 def load_data():
     """Load expenses data from a JSON file and return it as a list."""
-    if not os.path.exists(DATA_FILE):
+    if not os.path.exists(DATA_FILE) or os.stat(DATA_FILE).st_size == 0:
         return []
     with open(DATA_FILE, "r") as f:
         return json.load(f)
@@ -37,6 +37,7 @@ def add_expense(data, price, category, date=None):
         date = datetime.date.today().isoformat()
     expense = {"price": price, "category": category, "date": date}
     data.append(expense)
+    save_data(data)
     print(f"Added expense: {price:.2f} PLN, Category: {category}, Date: {date}")
 
 

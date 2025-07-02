@@ -1,17 +1,20 @@
 """Stuff concerning operating with budget."""
 
 import json
+import os
 
 
 BUDGET_FILE = "budget.json"
 
 
 def load_budget():
-    """Load budget data from a JSON file and return it as a list."""
+    """Load budget data from a JSON file and return it as a dict."""
+    if not os.path.exists(BUDGET_FILE) or os.stat(BUDGET_FILE).st_size == 0:
+        return {}  # return empty dict for testing
     try:
-        with open("budget.json", "r") as f:
+        with open(BUDGET_FILE, "r") as f:
             return json.load(f)
-    except FileNotFoundError:
+    except (FileNotFoundError, json.JSONDecodeError):
         return {}
 
 
@@ -22,15 +25,30 @@ def save_budget(budget):
 
 
 def set_budget(month, year, amount):
-    """Save the budget data to a JSON file."""
-    if amount <= 0:
-        print("Budget amount must be greater than or equal zero.")
-        return
+    """Set the budget for a specific month and year."""
     budget = load_budget()
-    key = f"{year}-{month:02d}"
+    if month is None:
+        key = f"{year}"
+    else:
+        key = f"{year}-{month:02d}"
     budget[key] = amount
     save_budget(budget)
     print(f"Budget for {key} set to {amount:.2f} PLN")
+
+
+def calculate_remaining(month, year, data):
+    """Calculate the remaining budget for a specific month and year."""
+    budget = load_budget()
+    key = f"{year}-{month:02d}"
+    budget_amount = budget.get(key)
+    expenses_sum = sum(e["price"] for e in data if e["date"].startswith(key))
+    return {
+        "budget": budget_amount,
+        "expenses_sum": expenses_sum,
+        "remaining": (
+            (budget_amount - expenses_sum) if budget_amount is not None else None
+        ),
+    }
 
 
 def show_budget(month, year, data):
