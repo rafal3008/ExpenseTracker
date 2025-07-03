@@ -81,7 +81,8 @@ def main():
         today = datetime.date.today()
         month = args.month
         year = args.year if args.year else today.year
-        show_budget(month, year)
+        data = load_data()
+        show_budget(month, year, data)
         return
 
     if args.set_budget is not None:
