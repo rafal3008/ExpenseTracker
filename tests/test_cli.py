@@ -9,7 +9,7 @@ import tempfile
 
 def run_command(args, cwd=None):
     """Help to run CLI command and capture output."""
-    main_path = os.path.join(os.path.dirname(__file__), "..", "cli", "main.py")
+    main_path = os.path.join(os.path.dirname(__file__), "..", "cli", "cli.py")
     main_path = os.path.abspath(main_path)
 
     result = subprocess.run(
