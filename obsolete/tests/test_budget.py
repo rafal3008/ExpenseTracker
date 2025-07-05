@@ -4,7 +4,7 @@ import tempfile
 import json
 import os
 import pytest
-from cli import budget
+from obsolete.cli import budget
 
 
 def test_set_and_show_budget():
