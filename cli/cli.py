@@ -10,7 +10,7 @@ Expense management module:
 import argparse
 import datetime
 
-from api_client import *
+import api_client
 
 # BUDGET_FILE = os.getenv("BUDGET_FILE", "budget.json")
 # DATA_FILE = os.getenv("DATA_FILE", "expenses.json")
@@ -82,7 +82,7 @@ def main():
         if args.year is None or args.month is None:
             print("Please specify --year and --month to show budget.")
             return
-        resp = get_budget(args.year, args.month)
+        resp = api_client.get_budget(args.year, args.month)
         print(f"Budget for {args.year}-{args.month:02d}: {resp['budget']:.2f} PLN")
         print(f"Spent: {resp['spent']:.2f} PLN")
         print(f"Remaining: {resp['remaining']:.2f} PLN")
@@ -94,7 +94,7 @@ def main():
         if args.year is None or args.month is None:
             print("Please specify --year and --month when setting budget.")
             return
-        resp = set_budget(args.year, args.month, args.set_budget)
+        resp = api_client.set_budget(args.year, args.month, args.set_budget)
         print(resp["message"])
         return
 
@@ -110,13 +110,13 @@ def main():
 
         price = float(price_str)
 
-        resp = add_expense(price, category, date_str)
+        resp = api_client.add_expense(price, category, date_str)
         print(resp["message"])
         return
 
     if args.delete is not None:
         index = args.delete - 1  # API expects 0-based
-        resp = delete_expense(index)
+        resp = api_client.delete_expense(index)
         print(resp["message"])
         return
 
@@ -126,12 +126,12 @@ def main():
         price = None if price_str.lower() == "none" else float(price_str)
         category = None if category.lower() == "none" else category
         date = None if date.lower() == "none" else date
-        resp = edit_expense(index, price, category, date)
+        resp = api_client.edit_expense(index, price, category, date)
         print(resp["message"])
         return
 
     if args.list:
-        expenses = get_expenses()
+        expenses = api_client.get_expenses()
         if not expenses:
             print("No expenses found.")
             return
@@ -142,7 +142,7 @@ def main():
     parser.print_help()
 
     if args.clear_expenses:
-        resp = clear_expenses()
+        resp = api_client.clear_expenses()
         print(resp["message"])
         return
 

@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, conint, confloat
 from typing import List, Optional
 import datetime
 
-from storage import load_expenses, save_expenses, load_budget, save_budget
+from api.storage import load_expenses, save_expenses, load_budget, save_budget
 
 app = FastAPI()
 
