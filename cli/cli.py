@@ -9,35 +9,33 @@ Expense management module:
 
 import argparse
 import datetime
-from expenses import (
-    load_data,
-    add_expense,
-    filter_expenses,
-    edit_expense,
-    delete_expense,
-)
-import os
 
+import api_client
 
-from budget import set_budget, show_budget
-from plotting import plot_expenses_by_category
-
-BUDGET_FILE = os.getenv("BUDGET_FILE", "budget.json")
-DATA_FILE = os.getenv("DATA_FILE", "expenses.json")
+# BUDGET_FILE = os.getenv("BUDGET_FILE", "budget.json")
+# DATA_FILE = os.getenv("DATA_FILE", "expenses.json")
 
 
 def main():
     """Parse arguments and execute commands."""
     parser = argparse.ArgumentParser()
     # actions
-    parser.add_argument("-a", "--add", action="store_true", help="Add an expense.")
+    parser.add_argument(
+        "--add",
+        nargs="+",
+        metavar=("PRICE", "CATEGORY", "DATE"),
+        help="Add an expense: PRICE [CATEGORY] [DATE]",
+    )
     parser.add_argument(
         "--delete",
         type=int,
         help="Delete expense by its index in the list (starting from 1).",
     )
     parser.add_argument(
-        "--edit", type=int, help="Edit an expense by its index (1-based)."
+        "--edit",
+        nargs=4,
+        metavar=("INDEX", "PRICE", "CATEGORY", "DATE"),
+        help="Edit an expense: INDEX PRICE CATEGORY DATE (use 'None' to skip).",
     )
     parser.add_argument("-l", "--list", action="store_true", help="List expenses.")
     parser.add_argument("-s", "--sum", action="store_true", help="Sum the expenses.")
@@ -47,6 +45,9 @@ def main():
     parser.add_argument("--export", help="Export expenses to CSV file.")
     parser.add_argument(
         "--plot", action="store_true", help="Plot expenses by category."
+    )
+    parser.add_argument(
+        "--clear-expenses", action="store_true", help="Delete all expenses."
     )
 
     # filters
@@ -78,60 +79,72 @@ def main():
     args = parser.parse_args()
 
     if args.show_budget:
-        today = datetime.date.today()
-        month = args.month
-        year = args.year if args.year else today.year
-        data = load_data()
-        show_budget(month, year, data)
+        if args.year is None or args.month is None:
+            print("Please specify --year and --month to show budget.")
+            return
+        resp = api_client.get_budget(args.year, args.month)
+        print(f"Budget for {args.year}-{args.month:02d}: {resp['budget']:.2f} PLN")
+        print(f"Spent: {resp['spent']:.2f} PLN")
+        print(f"Remaining: {resp['remaining']:.2f} PLN")
+        if resp.get("warning"):
+            print("Warning:", resp["warning"])
         return
 
-    if args.set_budget is not None:
-        if args.month is None or args.year is None:
-            print("Please specify --month and --year when setting budget.")
+    if args.set_budget:
+        if args.year is None or args.month is None:
+            print("Please specify --year and --month when setting budget.")
             return
-        set_budget(args.month, args.year, args.set_budget)
+        resp = api_client.set_budget(args.year, args.month, args.set_budget)
+        print(resp["message"])
         return
 
     if args.add:
-        data = load_data()
-        price = float(args.add[0])
-        category = args.add[1]
-        add_expense(data, price, category, args.date)
-        return
+        price_str = args.add[0]
+        category = "Misc"
+        date_str = datetime.date.today().isoformat()
 
-    if args.filter:
-        data = load_data()
-        date_from = (
-            datetime.date.fromisoformat(args.date_from) if args.date_from else None
-        )
-        date_to = datetime.date.fromisoformat(args.date_to) if args.date_to else None
-        filtered = filter_expenses(
-            data, category=args.category, date_from=date_from, date_to=date_to
-        )
-        for i, e in enumerate(filtered):
-            print(f"{i}: {e['price']:.2f} PLN, {e['category']}, {e['date']}")
-        return
+        if len(args.add) >= 2 and args.add[1] and args.add[1].lower() != "none":
+            category = args.add[1]
+        if len(args.add) >= 3 and args.add[2] and args.add[2].lower() != "none":
+            date_str = args.add[2]
 
-    if args.edit:
-        data = load_data()
-        index = int(args.edit[0])
-        price = float(args.edit[1]) if len(args.edit) > 1 else None
-        category = args.edit[2] if len(args.edit) > 2 else None
-        date = args.edit[3] if len(args.edit) > 3 else None
-        edit_expense(data, index, price, category, date)
+        price = float(price_str)
+
+        resp = api_client.add_expense(price, category, date_str)
+        print(resp["message"])
         return
 
     if args.delete is not None:
-        data = load_data()
-        delete_expense(data, args.delete)
+        index = args.delete - 1  # API expects 0-based
+        resp = api_client.delete_expense(index)
+        print(resp["message"])
         return
 
-    if args.plot:
-        data = load_data()
-        plot_expenses_by_category(data)
+    if args.edit:
+        index_str, price_str, category, date = args.edit
+        index = int(index_str) - 1
+        price = None if price_str.lower() == "none" else float(price_str)
+        category = None if category.lower() == "none" else category
+        date = None if date.lower() == "none" else date
+        resp = api_client.edit_expense(index, price, category, date)
+        print(resp["message"])
+        return
+
+    if args.list:
+        expenses = api_client.get_expenses()
+        if not expenses:
+            print("No expenses found.")
+            return
+        for i, exp in enumerate(expenses, start=1):
+            print(f"{i}. {exp['price']:.2f} PLN, {exp['category']}, {exp['date']}")
         return
 
     parser.print_help()
+
+    if args.clear_expenses:
+        resp = api_client.clear_expenses()
+        print(resp["message"])
+        return
 
 
 if __name__ == "__main__":
