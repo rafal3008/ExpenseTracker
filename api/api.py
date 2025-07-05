@@ -9,8 +9,7 @@ from pydantic import BaseModel, Field, conint, confloat
 from typing import List, Optional
 import datetime
 
-from cli import budget as budget_cli
-from cli import expenses as expenses_cli
+from storage import load_expenses, save_expenses, load_budget, save_budget
 
 app = FastAPI()
 
@@ -35,9 +34,9 @@ class ExpenseItem(BaseModel):
 def set_budget(item: BudgetItem):
     """Set the budget, it's not setting budget...yet."""
     key = f"{item.year}-{item.month:02d}"
-    budget_data = budget_cli.load_budget()
+    budget_data = load_budget()
     budget_data[key] = item.amount
-    budget_cli.save_budget(budget_data)
+    save_budget(budget_data)
     return {"message": f"Budget for {key} set to {item.amount:.2f} PLN"}
 
 
@@ -45,12 +44,12 @@ def set_budget(item: BudgetItem):
 def get_budget(year: int, month: int):
     """Get the budget for specific year and/or month."""
     key = f"{year}-{month:02d}"
-    budget_data = budget_cli.load_budget()
+    budget_data = load_budget()
     amount = budget_data.get(key)
     if amount is None:
         raise HTTPException(status_code=404, detail="Budget not found")
 
-    expenses_data = expenses_cli.load_data()
+    expenses_data = load_expenses()
     spent = sum(
         expense["price"] for expense in expenses_data if expense["date"].startswith(key)
     )
@@ -74,35 +73,50 @@ def get_budget(year: int, month: int):
 def delete_budget(year: int, month: int):
     """Delete the budget for specific year and/or month."""
     key = f"{year}-{month:02d}"
-    budget_data = budget_cli.load_budget()
+    budget_data = load_budget()
     if key not in budget_data:
         raise HTTPException(status_code=404, detail="Budget not found")
     del budget_data[key]
-    budget_cli.save_budget(budget_data)
+    save_budget(budget_data)
     return {"message": f"Budget for {key} deleted"}
 
 
 @app.post("/expenses/")
 def add_expense(expense: ExpenseItem):
     """Add an expense to the budget."""
-    expenses_data = expenses_cli.load_data()
+    expenses_data = load_expenses()
     new_expense = {
         "price": expense.price,
         "category": expense.category,
         "date": expense.date.isoformat(),
     }
     expenses_data.append(new_expense)
-    expenses_cli.save_data(expenses_data)
+    save_expenses(expenses_data)
     return {
         "message": f"Added expense: {expense.price:.2f} PLN,"
         f" Category: {expense.category}, Date: {expense.date}"
     }
 
 
+@app.delete("/expenses/{index}")
+def delete_expense(index: int = Path(..., ge=0)):
+    """Delete an expense by index."""
+    expenses_data = load_expenses()
+    if index >= len(expenses_data):
+        raise HTTPException(status_code=404, detail="Expense not found")
+    deleted_expense = expenses_data.pop(index)
+    save_expenses(expenses_data)
+    return {
+        "message": f"Deleted expense: {deleted_expense['price']} "
+        f"PLN, Category: {deleted_expense['category']}, "
+        f"Date: {deleted_expense['date']}"
+    }
+
+
 @app.get("/expenses/", response_model=List[ExpenseItem])
 def list_expenses(year: Optional[int] = None, month: Optional[int] = None):
     """List all expenses for a specific year and/or month."""
-    expenses_data = expenses_cli.load_data()
+    expenses_data = load_expenses()
 
     if year is not None and month is not None:
         key = f"{year}-{month:02d}"
@@ -125,8 +139,7 @@ def list_expenses(year: Optional[int] = None, month: Optional[int] = None):
 @app.delete("/expenses/")
 def clear_expenses():
     """Clear all expenses_data."""
-    expenses_cli.save_data()
-    # TODO:check if that even works
+    save_expenses(None)
     return {"message": "All expenses deleted"}
 
 
@@ -140,7 +153,7 @@ def edit_expense(
     date: Optional[datetime.date] = None,
 ):
     """Edit an expense."""
-    expenses_data = expenses_cli.load_data()
+    expenses_data = load_expenses()
     if index >= len(expenses_data):
         raise HTTPException(status_code=404, detail="Expense not found")
 
@@ -151,5 +164,5 @@ def edit_expense(
     if date is not None:
         expenses_data[index]["date"] = date.isoformat()
 
-    expenses_cli.save_data(expenses_data)
+    save_expenses(expenses_data)
     return {"message": f"Expense at index {index} updated."}
